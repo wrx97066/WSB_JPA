@@ -31,11 +31,14 @@ public class PatientEntity {
 	@Column(nullable = false)
 	private LocalDate dateOfBirth;
 
+	@Column(nullable = false)
+	private boolean insured;
+
 	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "address_id")
 	private AddressEntity address;
 
-	@OneToMany(mappedBy = "patient", cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<VisitEntity> visits;
 
 	public Long getId() {
@@ -93,6 +96,15 @@ public class PatientEntity {
 	public void setDateOfBirth(LocalDate dateOfBirth) {
 		this.dateOfBirth = dateOfBirth;
 	}
+
+	public boolean isInsured() {
+		return insured;
+	}
+
+	public void setInsured(boolean insured) {
+		this.insured = insured;
+	}
+
 	public AddressEntity getAddress() {
 		return address;
 	}
@@ -108,5 +120,4 @@ public class PatientEntity {
 	public void setVisits(List<VisitEntity> visits) {
 		this.visits = visits;
 	}
-
 }
