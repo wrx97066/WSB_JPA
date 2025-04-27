@@ -1,9 +1,9 @@
 package com.jpacourse.persistance.entity;
 
-import java.time.LocalDate;
-
 import jakarta.persistence.*;
-
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -38,8 +38,17 @@ public class PatientEntity {
 	@JoinColumn(name = "address_id")
 	private AddressEntity address;
 
-	@OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(
+			mappedBy = "patient",
+			cascade = CascadeType.ALL,
+			orphanRemoval = true,
+			fetch = FetchType.EAGER
+	)
+	@Fetch(FetchMode.SELECT)
 	private List<VisitEntity> visits;
+
+	@Version
+	private Long version;
 
 	public Long getId() {
 		return id;
@@ -119,5 +128,13 @@ public class PatientEntity {
 
 	public void setVisits(List<VisitEntity> visits) {
 		this.visits = visits;
+	}
+
+	public Long getVersion() {
+		return version;
+	}
+
+	public void setVersion(Long version) {
+		this.version = version;
 	}
 }

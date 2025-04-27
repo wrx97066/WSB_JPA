@@ -1,6 +1,7 @@
 package com.jpacourse.service;
 
 import com.jpacourse.dto.PatientTO;
+import com.jpacourse.dto.VisitTO;
 import com.jpacourse.persistance.dao.DoctorDao;
 import com.jpacourse.persistance.dao.PatientDao;
 import com.jpacourse.persistance.entity.DoctorEntity;
@@ -11,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager; // 👈 Poprawny import dla Jakarta Persistence
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -40,12 +41,12 @@ public class PatientServiceTest {
         PatientEntity patient = createTestPatientWithVisits(doctor);
 
         // When
-        patientService.deletePatient(patient.getId());
+        patientService.delete(patient.getId());
 
         // Then
-        assertNull(patientDao.findById(patient.getId()));
+        assertNull(patientDao.findOne(patient.getId()));
         assertTrue(patientDao.findAllVisitsByPatientId(patient.getId()).isEmpty());
-        assertNotNull(doctorDao.findById(doctor.getId()));
+        assertNotNull(doctorDao.findOne(doctor.getId()));
     }
 
     @Test
@@ -56,12 +57,23 @@ public class PatientServiceTest {
         patientDao.save(patient);
 
         // When
-        PatientTO result = patientService.getPatientById(patient.getId());
+        PatientTO result = patientService.findById(patient.getId());
 
         // Then
         assertTrue(result.isInsured());
         assertEquals(patient.getFirstName(), result.getFirstName());
         assertEquals(patient.getLastName(), result.getLastName());
+    }
+
+    @Test
+    public void shouldFindAllVisitsByPatientId() {
+        // Zakładając, że w data.sql pacjent 201 ma 2 wizyty (ID 301 i 302)
+        List<VisitTO> visits = patientService.findAllVisitsByPatientId(201L);
+
+        assertNotNull(visits);
+        assertEquals(2, visits.size());
+        assertTrue(visits.stream().anyMatch(v -> v.getId().equals(301L)));
+        assertTrue(visits.stream().anyMatch(v -> v.getId().equals(302L)));
     }
 
     private PatientEntity createTestPatient() {

@@ -7,6 +7,8 @@ import com.jpacourse.persistance.entity.VisitEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -46,5 +48,35 @@ public class PatientDaoImpl extends AbstractDao<PatientEntity, Long> implements 
             return update(patient);
         }
         return null;
+    }
+
+    @Override
+    public List<PatientEntity> findByLastName(String lastName) {
+        return entityManager.createQuery(
+                        "SELECT p FROM PatientEntity p WHERE p.lastName = :lastName",
+                        PatientEntity.class
+                )
+                .setParameter("lastName", lastName)
+                .getResultList();
+    }
+
+    @Override
+    public List<PatientEntity> findPatientsWithMoreThanXVisits(long minVisits) {
+        return entityManager.createQuery(
+                        "SELECT p FROM PatientEntity p WHERE SIZE(p.visits) > :minVisits",
+                        PatientEntity.class
+                )
+                .setParameter("minVisits", minVisits)
+                .getResultList();
+    }
+
+    @Override
+    public List<PatientEntity> findByDateOfBirthAfter(LocalDate date) {
+        return entityManager.createQuery(
+                        "SELECT p FROM PatientEntity p WHERE p.dateOfBirth > :date",
+                        PatientEntity.class
+                )
+                .setParameter("date", date)
+                .getResultList();
     }
 }

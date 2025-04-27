@@ -3,6 +3,7 @@ package com.jpacourse.persistance.dao;
 import com.jpacourse.persistance.entity.DoctorEntity;
 import com.jpacourse.persistance.entity.PatientEntity;
 import com.jpacourse.persistance.entity.VisitEntity;
+import jakarta.persistence.OptimisticLockException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @Transactional
@@ -25,30 +28,26 @@ public class PatientDaoTest {
     private EntityManager entityManager;
 
     @Test
-    public void shouldAddVisitToPatient() {
-        // Given
+    public void shouldThrowOptimisticLockExceptionOnConcurrentUpdate() {
         PatientEntity patient = createTestPatient();
-        DoctorEntity doctor = createTestDoctor();
+        entityManager.persist(patient);
+        entityManager.flush();
 
-        LocalDateTime visitTime = LocalDateTime.now();
-        String description = "Kontrolna wizyta";
+        PatientEntity firstInstance = patientDao.findOne(patient.getId());
+        firstInstance.setFirstName("Pierwsza zmiana");
+        patientDao.update(firstInstance);
 
-        // When
-        PatientEntity updatedPatient = patientDao.addVisit(
-                patient.getId(),
-                doctor.getId(),
-                visitTime,
-                description
-        );
+        PatientEntity secondInstance = new PatientEntity();
+        secondInstance.setId(patient.getId());
+        secondInstance.setVersion(patient.getVersion());
+        secondInstance.setLastName("Konfliktowa zmiana");
+        secondInstance.setFirstName(patient.getFirstName());
+        secondInstance.setPatientNumber(patient.getPatientNumber());
 
-        // Then
-        assertNotNull(updatedPatient);
-        assertEquals(1, updatedPatient.getVisits().size());
-
-        VisitEntity visit = updatedPatient.getVisits().get(0);
-        assertEquals(visitTime, visit.getTime());
-        assertEquals(description, visit.getDescription());
-        assertEquals(doctor.getId(), visit.getDoctor().getId());
+        assertThrows(OptimisticLockException.class, () -> {
+            patientDao.update(secondInstance);
+            entityManager.flush();
+        });
     }
 
     private PatientEntity createTestPatient() {
@@ -60,14 +59,5 @@ public class PatientDaoTest {
         patient.setInsured(true);
         entityManager.persist(patient);
         return patient;
-    }
-
-    private DoctorEntity createTestDoctor() {
-        DoctorEntity doctor = new DoctorEntity();
-        doctor.setFirstName("Anna");
-        doctor.setLastName("Nowak");
-        doctor.setSpecialization("Kardiolog");
-        entityManager.persist(doctor);
-        return doctor;
     }
 }
